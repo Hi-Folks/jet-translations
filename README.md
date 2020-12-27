@@ -4,8 +4,8 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/hi-folks/jet-translations.svg?style=flat-square)](https://packagist.org/packages/hi-folks/jet-translations)
 
 This package includes:
-- translations strings (in json format) for Jetstream auth view and components
-- command for extractig translation strings from view templates (Blade files)
+- translation strings (in json format) for Jetstream auth view and components
+- command for extracting translation strings from view templates (Blade files)
 
 ## About translation strings
 Json files are:
@@ -33,6 +33,11 @@ You can install the package via composer:
 
 ```bash
 composer require hi-folks/jet-translations
+```
+
+Publish the languages
+```bash
+php artisan vendor:publish --provider="HiFolks\JetTranslations\JetTranslationsServiceProvider" --tag="lang" --force
 ```
 
 ## Usage
