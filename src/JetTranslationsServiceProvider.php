@@ -16,7 +16,8 @@ class JetTranslationsServiceProvider extends ServiceProvider
         /*
          * Optional methods to load your package assets
          */
-        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang' );
+        //$this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang' );
+        $this->loadJsonTranslationsFrom(resource_path('lang/vendor/jet-translations'));
 
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'jet-translations');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
