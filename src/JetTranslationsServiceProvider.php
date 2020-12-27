@@ -2,6 +2,8 @@
 
 namespace HiFolks\JetTranslations;
 
+
+use HiFolks\JetTranslations\Console\JetTranslationsExtractor;
 use Illuminate\Support\ServiceProvider;
 
 class JetTranslationsServiceProvider extends ServiceProvider
@@ -14,7 +16,8 @@ class JetTranslationsServiceProvider extends ServiceProvider
         /*
          * Optional methods to load your package assets
          */
-        // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'jet-translations');
+        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang' );
+
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'jet-translations');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
@@ -35,12 +38,14 @@ class JetTranslationsServiceProvider extends ServiceProvider
             ], 'assets');*/
 
             // Publishing the translation files.
-            /*$this->publishes([
-                __DIR__.'/../resources/lang' => resource_path('lang/vendor/jet-translations'),
-            ], 'lang');*/
+            $this->publishes([
+                __DIR__. '/../resources/lang' => resource_path('lang/vendor/jet-translations'),
+            ], 'lang');
 
             // Registering package commands.
-            // $this->commands([]);
+            $this->commands([
+                    JetTranslationsExtractor::class
+            ]);
         }
     }
 
@@ -56,5 +61,9 @@ class JetTranslationsServiceProvider extends ServiceProvider
         $this->app->singleton('jet-translations', function () {
             return new JetTranslations;
         });
+
+        //$this->app->singleton('translator')->addJsonPath(App::langPath() . DIRECTORY_SEPARATOR . "vendor/jet-translations");
+
+
     }
 }
