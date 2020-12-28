@@ -4,18 +4,23 @@ namespace HiFolks\JetTranslations\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
 
 class JetTranslationsExtractor extends Command
 {
+
+    const DEFAULT_VIEWS_PATH = 'vendor/laravel/jetstream/stubs/livewire/resources/views';
+    const DEFAULT_LANG_PATH = 'vendor/jet-translations';
+    const DEFAULT_LANG = 'it';
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
     protected $signature = 'jet-trans:extract
-    {--language=it : Language files (en or it or de or...)}
-    {--path-views=vendor/laravel/jetstream/stubs/livewire/resources/views : path for views file (blade.php files)}
-    {--path-lang=vendor/jet-translations : path for lang file ( <lang>.json file)}
+    {--language=' . self::DEFAULT_LANG . ' : Language files (en or it or de or...)}
+    {--path-views=' . self::DEFAULT_VIEWS_PATH . ' : path for views file (blade.php files)}
+    {--path-lang=' . self::DEFAULT_LANG_PATH . ' : path for lang file ( <lang>.json file)}
     {--use-custom-lang-path : use custom Lang Path instead of default one}
     {--save-json : create or update json lang file}
     ';
@@ -26,6 +31,13 @@ class JetTranslationsExtractor extends Command
      * @var string
      */
     protected $description = 'Extract translation key from Jetstream blade templates/componen';
+
+    /**
+     * array of "info" to show at the end of the execution in table format.
+     *
+     * @var array<array>
+     */
+    private $report = [];
 
     /**
      * Create a new command instance.
@@ -43,7 +55,7 @@ class JetTranslationsExtractor extends Command
      * @param bool $walkIntoDirectories
      * @return array<string>|false
      */
-    public static function findFiles(string $pattern, $flags = 0, $walkIntoDirectories = true)
+    private static function findFiles(string $pattern, $flags = 0, $walkIntoDirectories = true)
     {
         $files = glob($pattern, $flags);
         if ($walkIntoDirectories) {
@@ -55,6 +67,30 @@ class JetTranslationsExtractor extends Command
             }
         }
         return $files;
+    }
+
+    private function report($label, $value)
+    {
+        $item = [];
+        $item[0] = $label;
+        $item[1] = $value;
+        $this->report[] = $item;
+    }
+
+    private function printReport()
+    {
+        $this->table(["Info", "Value"], $this->report);
+    }
+
+    private static function stripAbsolutePath($path)
+    {
+        $curDir = getcwd();
+        if (Str::length($curDir) > 3) {
+            if (Str::startsWith($path, $curDir)) {
+                return "." . Str::after($path, $curDir);
+            }
+        }
+        return $path;
     }
 
     /**
@@ -71,74 +107,50 @@ class JetTranslationsExtractor extends Command
         $useCustomLangPath = $this->option('use-custom-lang-path');
         $saveJson = $this->option('save-json');
 
-        if ($path === "resources/views") {
-            $path = resource_path() . DIRECTORY_SEPARATOR . "views";
-        } elseif (!is_dir($path)) {
+        if (!is_dir($path)) {
             $path = resource_path() . DIRECTORY_SEPARATOR . "views";
         }
-        // $path = "vendor/laravel/jetstream/stubs/livewire/resources/views";
+
         $prefixLangPath = "";
         if (!$useCustomLangPath) {
-            $prefixLangPath = App::langPath().  DIRECTORY_SEPARATOR;
+            $prefixLangPath = App::langPath() .  DIRECTORY_SEPARATOR;
         }
         $langPathDestination = $prefixLangPath . $pathLang;
 
         $filePattern = "/*.blade.php";
-
-        $this->info("Extracting strings from this path :" . $path);
-        $this->info("Views pattern files               :" . $filePattern);
-        $this->info("Path for localization files       :" . $langPathDestination);
-        $this->info("Language                          :" . $language);
-        $this->info("Want to save json                 :" . $saveJson);
-
+        $jsonFile = $langPathDestination . DIRECTORY_SEPARATOR . "{$language}.json";
 
         $files = self::findFiles($path . $filePattern);
-        $this->info("Views files                        :" . sizeof($files));
-        $trans_keys = [];
-        $functions = [
-            'trans',
-            'trans_choice',
-            'Lang::get',
-            'Lang::choice',
-            'Lang::trans',
-            'Lang::transChoice',
-            '@lang',
-            '@choice',
-            '__',
-            '$trans.get',
-        ];
-        $stringPattern =
-            "[^\w]" .                                     // Must not have an alphanum before real method
-            '(' . implode('|', $functions) . ')' .             // Must start with one of the functions
-            "\(\s*" .                                       // Match opening parenthesis
-            "(?P<quote>['\"])" .                            // Match " or ' and store in {quote}
-            "(?P<string>(?:\\\k{quote}|(?!\k{quote}).)*)" . // Match any string that can be {quote} escaped
-            "\k{quote}" .                                   // Match " or ' previously matched
-            "\s*[\),]";                                    // Close parentheses or new parameter
 
+        $this->report("Views path", self::stripAbsolutePath($path));
+        $this->report("Views files", $filePattern);
+        $this->report("Views files found", sizeof($files));
+        $this->report("Lang path", self::stripAbsolutePath($langPathDestination));
+        $this->report("Language", $language);
+        $this->report("Language file", self::stripAbsolutePath($jsonFile));
+        $this->report("Save Json", ($saveJson ? "Save" : "Don't save"));
+
+
+        $trans_keys = [];
         $lh = 'trans|trans_choice|Lang::get|Lang::choice|Lang::trans|Lang::transChoice|@lang|@choice|__|$trans.get';
         $stringPattern = '[^\w](' . $lh . ')\((?P<quote>[\'"])(?P<string>(?:\\k{quote}|(?!\k{quote}).)*)\k{quote}[\),]';
         $regexp = '/' . $stringPattern . '/siU';
+        $reportViewFiles = [];
         foreach ($files as $f) {
-            //$this->info($regexp);
             preg_match_all($regexp, file_get_contents($f), $keys);
-            $count = 0;
-            $keys["string"] = str_replace("\\'", "'", $keys["string"], $count);
-            if ($count > 0) {
-                //dd($keys["string"]);
-            }
+            $keys["string"] = str_replace("\\'", "'", $keys["string"]);
 
+            $fileCount = [];
+            $fileCount[0] = sizeof($keys["string"]);
+            $fileCount[1] = $f;
+            $reportViewFiles[] = $fileCount;
             $trans_keys = array_merge($trans_keys, $keys["string"]);
-            //$this->info("Resource path: {$f}!");
         }
-        $this->info("Keys found                        :" . sizeof($trans_keys));
-
-        //$jsonFile = App::langPath() . DIRECTORY_SEPARATOR . "{$language}.json";
-
+        $this->table([ "Keys","File"], $reportViewFiles);
+        $this->report("Keys found", sizeof($trans_keys));
 
 
-        $jsonFile = $langPathDestination . DIRECTORY_SEPARATOR . "{$language}.json";
-        $this->info("Language file: " . $jsonFile);
+
 
         $wannaCreate = false;
         if (file_exists($jsonFile)) {
@@ -149,7 +161,6 @@ class JetTranslationsExtractor extends Command
             $wannaCreate = true;
             $json_a = [];
         }
-        //dd($json_a);
 
         $d = [];
         $countKeysFound = 0;
@@ -161,23 +172,27 @@ class JetTranslationsExtractor extends Command
             } else {
                 //$d[$v] = "## {$v} ##";
                 $countKeysNotFound++;
-                $this->info($v);
+                //$this->info($v);
                 $d[$v] = "###";
             }
         }
-        $this->info("Keys found     : " . $countKeysFound);
-        $this->info("Keys NOT found : " . $countKeysNotFound);
+        $this->report("Keys matched", $countKeysFound);
+        $this->report("Keys missed in json", $countKeysNotFound);
+
 
         $string = stripslashes(json_encode($d, JSON_PRETTY_PRINT));
         //$this->info($string);
         if ($saveJson) {
             if (!file_exists($langPathDestination)) {
                 $this->info("Lang path directory was not exist so, I'm going to create it");
+
                 mkdir($langPathDestination, 0777, true);
             }
             $this->info("I'm going to create: ${jsonFile}");
             file_put_contents($jsonFile, $string);
         }
+
+        $this->printReport();
 
 
         return 0;
