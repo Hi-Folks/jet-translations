@@ -5,8 +5,6 @@ namespace HiFolks\JetTranslations\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
 
-
-
 class JetTranslationsExtractor extends Command
 {
     /**
@@ -27,7 +25,7 @@ class JetTranslationsExtractor extends Command
      *
      * @var string
      */
-    protected $description = 'Extract translation key from templates';
+    protected $description = 'Extract translation key from Jetstream blade templates/componen';
 
     /**
      * Create a new command instance.
@@ -39,11 +37,22 @@ class JetTranslationsExtractor extends Command
         parent::__construct();
     }
 
-    public static function rglob($pattern, $flags = 0)
+    /**
+     * @param string $pattern search files following the $pattern. For example "*.blade.php"
+     * @param int $flags , flags according with glob php function
+     * @param bool $walkIntoDirectories
+     * @return array<string>|false
+     */
+    public static function findFiles(string $pattern, $flags = 0, $walkIntoDirectories = true)
     {
         $files = glob($pattern, $flags);
-        foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir) {
-            $files = array_merge($files, self::rglob($dir . '/' . basename($pattern), $flags));
+        if ($walkIntoDirectories) {
+            foreach (glob(dirname($pattern) . '/*', GLOB_ONLYDIR | GLOB_NOSORT) as $dir) {
+                $files = array_merge(
+                    $files,
+                    self::findFiles($dir . '/' . basename($pattern), $flags, $walkIntoDirectories)
+                );
+            }
         }
         return $files;
     }
@@ -83,7 +92,7 @@ class JetTranslationsExtractor extends Command
         $this->info("Want to save json                 :" . $saveJson);
 
 
-        $files = self::rglob($path . $filePattern);
+        $files = self::findFiles($path . $filePattern);
         $this->info("Views files                        :" . sizeof($files));
         $trans_keys = [];
         $functions = [
@@ -107,11 +116,10 @@ class JetTranslationsExtractor extends Command
             "\k{quote}" .                                   // Match " or ' previously matched
             "\s*[\),]";                                    // Close parentheses or new parameter
 
-        $stringPattern = '[^\w](trans|trans_choice|Lang::get|Lang::choice|Lang::trans|Lang::transChoice|@lang|@choice|__|$trans.get)\((?P<quote>[\'"])(?P<string>(?:\\k{quote}|(?!\k{quote}).)*)\k{quote}[\),]';
+        $lh = 'trans|trans_choice|Lang::get|Lang::choice|Lang::trans|Lang::transChoice|@lang|@choice|__|$trans.get';
+        $stringPattern = '[^\w](' . $lh . ')\((?P<quote>[\'"])(?P<string>(?:\\k{quote}|(?!\k{quote}).)*)\k{quote}[\),]';
         $regexp = '/' . $stringPattern . '/siU';
         foreach ($files as $f) {
-
-
             //$this->info($regexp);
             preg_match_all($regexp, file_get_contents($f), $keys);
             $count = 0;
