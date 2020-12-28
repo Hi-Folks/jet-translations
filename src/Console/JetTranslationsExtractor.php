@@ -79,7 +79,7 @@ class JetTranslationsExtractor extends Command
         // $path = "vendor/laravel/jetstream/stubs/livewire/resources/views";
         $prefixLangPath = "";
         if (!$useCustomLangPath) {
-            $prefixLangPath = App::langPath();
+            $prefixLangPath = App::langPath().  DIRECTORY_SEPARATOR;
         }
         $langPathDestination = $prefixLangPath . $pathLang;
 
