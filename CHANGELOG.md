@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 - 2021-09-02
+
+- Update template json translation file for Jetstream 2
+
 ## 0.1.1 - 2021-09-02
 
 - Update Italian json file for Jetstream 2
