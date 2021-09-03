@@ -1,5 +1,5 @@
 # GithHub Actions Workflow generated with Ghygen
-# Original configuration: https://ghygen.hi-folks.dev?code=85eafeecc8a67939fcebc863559562fd
+# Original configuration: https://ghygen.hi-folks.dev?code=354d36d61f68289bf7e40c41c6a5a1f1
 name: Template - Laravel package
 on:
   push:
@@ -45,6 +45,12 @@ jobs:
       run: php --version
 
 # Code quality
+    - name: Execute tests (Unit and Feature tests) via PHPUnit
+# Set environment
+      env:
+        SESSION_DRIVER: array
+
+      run: vendor/bin/phpunit --testdox
 
 
     - name: Execute Code Sniffer via phpcs
