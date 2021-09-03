@@ -10,7 +10,7 @@ class JetTranslationsServiceProvider extends ServiceProvider
     /**
      * Bootstrap the application services.
      */
-    public function boot()
+    public function boot(): void
     {
         //$this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang' );
         $this->loadJsonTranslationsFrom(resource_path('lang/vendor/jet-translations'));

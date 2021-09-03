@@ -9,9 +9,9 @@ use Illuminate\Support\Str;
 class JetTranslationsExtractor extends Command
 {
 
-    const DEFAULT_VIEWS_PATH = 'vendor/laravel/jetstream/stubs/livewire/resources/views';
-    const DEFAULT_LANG_PATH = 'vendor/jet-translations';
-    const DEFAULT_LANG = 'it';
+    public const DEFAULT_VIEWS_PATH = 'vendor/laravel/jetstream/stubs/livewire/resources/views';
+    public const DEFAULT_LANG_PATH = 'vendor/jet-translations';
+    public const DEFAULT_LANG = 'it';
     /**
      * The name and signature of the console command.
      *
@@ -69,7 +69,7 @@ class JetTranslationsExtractor extends Command
         return $files;
     }
 
-    private function report($label, $value)
+    private function report(string $label, mixed $value): void
     {
         $item = [];
         $item[0] = $label;
@@ -77,12 +77,12 @@ class JetTranslationsExtractor extends Command
         $this->report[] = $item;
     }
 
-    private function printReport()
+    private function printReport(): void
     {
         $this->table(["Info", "Value"], $this->report);
     }
 
-    private static function stripAbsolutePath($path)
+    private static function stripAbsolutePath(string $path): string
     {
         $curDir = getcwd();
         if (Str::length($curDir) > 3) {
